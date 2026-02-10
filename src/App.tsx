@@ -24,7 +24,10 @@ interface AvailabilityEntry {
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
-const DEFAULT_PLAYERS: Player[] = [];
+const DEFAULT_PLAYERS: Player[] = [
+  { id: 1, name: "Player 1", ranking: 1 },
+  { id: 2, name: "Player 2", ranking: 2 },
+];
 
 const DEFAULT_COURTS: Court[] = [
   {
@@ -197,7 +200,9 @@ function App() {
   const [newCourtAddress, setNewCourtAddress] = useState("");
   const [newCourtDistance, setNewCourtDistance] = useState("");
 
-  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(
+    DEFAULT_PLAYERS[0]?.id ?? null
+  );
   const [selectedCourtId, setSelectedCourtId] = useState<number | null>(
     DEFAULT_COURTS[0]?.id ?? null
   );
