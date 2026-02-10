@@ -24,18 +24,7 @@ interface AvailabilityEntry {
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
-const DEFAULT_PLAYERS: Player[] = [
-  "You",
-  "Teammate 1",
-  "Teammate 2",
-  "Teammate 3",
-  "Teammate 4",
-  "Teammate 5",
-  "Teammate 6",
-  "Teammate 7",
-  "Teammate 8",
-  "Teammate 9",
-].map((name, index) => ({ id: index + 1, name, ranking: index + 1 }));
+const DEFAULT_PLAYERS: Player[] = [];
 
 const DEFAULT_COURTS: Court[] = [
   {
@@ -87,7 +76,8 @@ function usePlayers() {
       prev.map((p) => (p.id === playerId ? { ...p, ranking } : p))
     );
   };
-  return { players, addPlayer, updatePlayerRanking };
+  const clearAllPlayers = () => setPlayers([]);
+  return { players, addPlayer, updatePlayerRanking, clearAllPlayers };
 }
 
 function useCourts() {
@@ -132,8 +122,9 @@ function useAvailability() {
       return [...prev, entry];
     });
   };
+  const clearAllEntries = () => setEntries([]);
 
-  return { entries, toggle };
+  return { entries, toggle, clearAllEntries };
 }
 
 function useSuggestedSession(
@@ -197,18 +188,16 @@ function useSuggestedSession(
 }
 
 function App() {
-  const { players, addPlayer, updatePlayerRanking } = usePlayers();
+  const { players, addPlayer, updatePlayerRanking, clearAllPlayers } = usePlayers();
   const { courts, addCourt } = useCourts();
-  const { entries, toggle } = useAvailability();
+  const { entries, toggle, clearAllEntries } = useAvailability();
 
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newCourtName, setNewCourtName] = useState("");
   const [newCourtAddress, setNewCourtAddress] = useState("");
   const [newCourtDistance, setNewCourtDistance] = useState("");
 
-  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(
-    DEFAULT_PLAYERS[0]?.id ?? null
-  );
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [selectedCourtId, setSelectedCourtId] = useState<number | null>(
     DEFAULT_COURTS[0]?.id ?? null
   );
@@ -259,7 +248,7 @@ function App() {
         </div>
         <div className="pill">
           <span className="pill-dot" />
-          <span>10-player squad ready</span>
+          <span>{players.length ? `${players.length} player${players.length !== 1 ? "s" : ""}` : "Add players to start"}</span>
         </div>
       </header>
 
@@ -307,6 +296,19 @@ function App() {
                   <span className="icon">+</span>
                   Add
                 </button>
+                {players.length > 0 && (
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={() => {
+                      clearAllPlayers();
+                      setSelectedPlayerId(null);
+                      clearAllEntries();
+                    }}
+                  >
+                    Delete all players
+                  </button>
+                )}
               </div>
             </div>
 
@@ -545,7 +547,7 @@ function App() {
 
             <div className="footer-note">
               Everything is stored in memory for now. Once you like the flow, we can plug this into
-              a backend or sync via a shared link for your <span>10-player</span> team.
+              a backend or sync via a shared link for your team.
             </div>
           </div>
         </section>
