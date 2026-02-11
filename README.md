@@ -1,10 +1,12 @@
-## Tennis Court Scheduler (Team of 10)
+## Tennis Court Scheduler
 
-This is a small, mobile-friendly web app to help your tennis squad of up to ~10 players coordinate **availability based on nearby courts**.
+**Live app:** [https://vbhupalam7.github.io/tennis-court-scheduler/](https://vbhupalam7.github.io/tennis-court-scheduler/) — share this link so others can use it.
+
+This is a small, mobile-friendly web app to help your tennis squad coordinate **availability based on nearby courts** (Dublin, CA area by default; courts are editable).
 
 ### What it does now
 
-- **Players**: Start with 10 default players (you + 9 teammates). You can add more if needed.
+- **Players**: Start with 2 default players; add more with “Quick add teammate.” Clear all with “Delete all players.”
 - **Courts**:
   - Add nearby courts with a **name**, optional **address/notes**, and an approximate **distance in miles** from your usual meetup point (home, club, etc.).
   - The distance is used to filter for "nearby" courts.
