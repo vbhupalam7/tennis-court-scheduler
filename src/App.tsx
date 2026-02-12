@@ -5,7 +5,8 @@ type TimeOfDay = "morning" | "afternoon" | "evening";
 interface Player {
   id: number;
   name: string;
-  ranking: number;
+  city: string;
+  rating: string;
 }
 
 interface Court {
@@ -25,8 +26,25 @@ interface AvailabilityEntry {
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 const DEFAULT_PLAYERS: Player[] = [
-  { id: 1, name: "Player 1", ranking: 1 },
-  { id: 2, name: "Player 2", ranking: 2 },
+  { id: 1, name: "Ankoti, Digvijay", city: "San Ramon", rating: "3.5C" },
+  { id: 2, name: "Bejjanki, Raghupal", city: "Pleasanton", rating: "3.5C" },
+  { id: 3, name: "Bhupalam, Vikas", city: "Dublin", rating: "3.5C" },
+  { id: 4, name: "Billapati, Anil", city: "San Ramon", rating: "3.0C" },
+  { id: 5, name: "Boral, John", city: "Walnut Creek", rating: "3.5C" },
+  { id: 6, name: "Chanda, Shanker", city: "Pleasanton", rating: "3.5C" },
+  { id: 7, name: "Chinta, Shiva Kumar", city: "Pleasanton", rating: "3.5S" },
+  { id: 8, name: "Ham, Oscar", city: "Dublin", rating: "3.0C" },
+  { id: 9, name: "Hari, Siva", city: "Sunnyvale", rating: "3.0C" },
+  { id: 10, name: "Hariharaiyer, Sivakumar", city: "Dublin", rating: "3.5C" },
+  { id: 11, name: "Kattamedi, Venkata", city: "Dublin", rating: "3.0C" },
+  { id: 12, name: "Lakinana, Manoj", city: "Dublin", rating: "3.0C" },
+  { id: 13, name: "Mandepudi, Srinivasa", city: "Dublin", rating: "3.5C" },
+  { id: 14, name: "Nyamagoudar, Maheshkumar", city: "San Ramon", rating: "3.0C" },
+  { id: 15, name: "Seshadri, Sunil", city: "Castro Valley", rating: "3.5C" },
+  { id: 16, name: "Sharma, Sumit", city: "Dublin", rating: "3.5C" },
+  { id: 17, name: "Singh, Dinesh", city: "Dublin", rating: "3.5C" },
+  { id: 18, name: "Singh, Kulbir", city: "Dublin", rating: "3.5C" },
+  { id: 19, name: "Vib, Anish", city: "San Ramon", rating: "3.0C" },
 ];
 
 const DEFAULT_COURTS: Court[] = [
@@ -63,24 +81,8 @@ const DEFAULT_COURTS: Court[] = [
 ];
 
 function usePlayers() {
-  const [players, setPlayers] = useState<Player[]>(DEFAULT_PLAYERS);
-  const addPlayer = (name: string, ranking?: number) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setPlayers((prev) => {
-      if (prev.length >= 20) return prev;
-      const nextId = (prev.at(-1)?.id ?? 0) + 1;
-      const nextRank = typeof ranking === "number" && !Number.isNaN(ranking) ? ranking : nextId;
-      return [...prev, { id: nextId, name: trimmed, ranking: nextRank }];
-    });
-  };
-  const updatePlayerRanking = (playerId: number, ranking: number) => {
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === playerId ? { ...p, ranking } : p))
-    );
-  };
-  const clearAllPlayers = () => setPlayers([]);
-  return { players, addPlayer, updatePlayerRanking, clearAllPlayers };
+  const players = DEFAULT_PLAYERS;
+  return { players };
 }
 
 function useCourts() {
@@ -191,11 +193,10 @@ function useSuggestedSession(
 }
 
 function App() {
-  const { players, addPlayer, updatePlayerRanking, clearAllPlayers } = usePlayers();
+  const { players } = usePlayers();
   const { courts, addCourt } = useCourts();
   const { entries, toggle, clearAllEntries } = useAvailability();
 
-  const [newPlayerName, setNewPlayerName] = useState("");
   const [newCourtName, setNewCourtName] = useState("");
   const [newCourtAddress, setNewCourtAddress] = useState("");
   const [newCourtDistance, setNewCourtDistance] = useState("");
@@ -210,12 +211,6 @@ function App() {
   const [maxDistanceKm, setMaxDistanceKm] = useState<number>(5);
 
   const suggested = useSuggestedSession(players, courts, entries, maxDistanceKm);
-
-  const handleAddPlayer = () => {
-    if (!newPlayerName.trim()) return;
-    addPlayer(newPlayerName);
-    setNewPlayerName("");
-  };
 
   const handleAddCourt = () => {
     if (!newCourtName.trim()) return;
@@ -264,7 +259,7 @@ function App() {
               <div>
                 <div className="card-title">Team & Courts</div>
                 <div className="card-caption">
-                  Add your players and nearby courts (with rough distance).
+                  Your squad roster and nearby courts (with rough distance).
                 </div>
               </div>
               <div className="chip-row">
@@ -284,36 +279,13 @@ function App() {
             </div>
 
             <div className="field">
-              <label>Quick add teammate</label>
-              <div className="inline-row">
-                <div className="field">
-                  <input
-                    className="input"
-                    placeholder="Name (e.g. Alex)"
-                    value={newPlayerName}
-                    onChange={(e) => setNewPlayerName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAddPlayer();
-                    }}
-                  />
-                </div>
-                <button className="btn" type="button" onClick={handleAddPlayer}>
-                  <span className="icon">+</span>
-                  Add
-                </button>
-                {players.length > 0 && (
-                  <button
-                    className="btn btn-secondary"
-                    type="button"
-                    onClick={() => {
-                      clearAllPlayers();
-                      setSelectedPlayerId(null);
-                      clearAllEntries();
-                    }}
-                  >
-                    Delete all players
-                  </button>
-                )}
+              <label>Squad roster</label>
+              <div className="list">
+                {players.map((player) => (
+                  <div key={player.id} className="pill-sm">
+                    <strong>{player.name}</strong> · {player.city} · {player.rating}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -468,7 +440,7 @@ function App() {
             <div className="availability-grid">
               <div className="availability-grid-header">
                 <div>Player</div>
-                <div>Player ranking</div>
+                <div>Rating</div>
                 <div>Morning</div>
                 <div>Afternoon</div>
                 <div>Evening</div>
@@ -476,20 +448,7 @@ function App() {
               {players.map((player) => (
                 <div className="availability-grid-row" key={player.id}>
                   <div className="availability-name">{player.name}</div>
-                  <div className="availability-ranking">
-                    <input
-                      type="number"
-                      min={1}
-                      max={99}
-                      className="ranking-input"
-                      value={player.ranking}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        if (!Number.isNaN(v)) updatePlayerRanking(player.id, Math.max(1, Math.min(99, v)));
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
+                  <div className="availability-ranking">{player.rating}</div>
                   {(["morning", "afternoon", "evening"] as TimeOfDay[]).map((slot) => {
                     const active = isSlotSelected(player.id, selectedDay, slot);
                     const label =
