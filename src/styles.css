@@ -347,9 +347,10 @@ label {
 }
 
 .availability-grid-header,
-.availability-grid-row {
+.availability-grid-row,
+.availability-grid-footer {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.5fr) repeat(3, minmax(0, 0.7fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.5fr) repeat(4, minmax(0, 0.8fr));
   font-size: 0.75rem;
 }
 
@@ -421,6 +422,87 @@ label {
 
 .slot-pill span.court {
   opacity: 0.85;
+}
+
+.game-col-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.3;
+}
+
+.game-col-opponent {
+  font-weight: 600;
+  font-size: 0.68rem;
+  color: #e5e7eb;
+}
+
+.game-col-date {
+  font-size: 0.65rem;
+  color: var(--accent);
+}
+
+.game-col-time {
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.game-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-cell-editable {
+  cursor: pointer;
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.game-cell-editable:hover {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.availability-grid-footer {
+  background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.4), #020617);
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.availability-grid-footer div {
+  padding: 6px 8px;
+  border-right: 1px solid rgba(15, 23, 42, 0.9);
+}
+
+.availability-grid-footer div:last-child {
+  border-right: none;
+}
+
+.availability-footer-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.availability-footer-count {
+  text-align: center;
+  color: var(--muted);
+}
+
+.availability-footer-count strong {
+  color: var(--accent);
+}
+
+.home-badge {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.away-badge {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 0.7rem;
 }
 
 .slot-empty {
