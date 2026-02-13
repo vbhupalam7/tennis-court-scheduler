@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface Player {
   id: number;
@@ -20,6 +20,8 @@ interface AvailabilityEntry {
   playerId: number;
   gameId: number;
 }
+
+const AVAILABILITY_STORAGE_KEY = "tennis-squad-availability";
 
 const DEFAULT_PLAYERS: Player[] = [
   { id: 1, name: "Ankoti, Digvijay", city: "San Ramon", rating: "3.5C" },
@@ -79,7 +81,30 @@ const GAMES: Game[] = [
 ];
 
 function useAvailability() {
-  const [entries, setEntries] = useState<AvailabilityEntry[]>([]);
+  const [entries, setEntries] = useState<AvailabilityEntry[]>(() => {
+    const raw = window.localStorage.getItem(AVAILABILITY_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed.filter(
+        (entry): entry is AvailabilityEntry =>
+          typeof entry?.playerId === "number" && typeof entry?.gameId === "number"
+      );
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(entries));
+  }, [entries]);
 
   const toggle = (playerId: number, gameId: number) => {
     setEntries((prev) => {
@@ -342,7 +367,7 @@ function App() {
             </div>
 
             <div className="footer-note">
-              Everything is stored in memory for now. Refresh will reset all entries.
+              Availability updates are automatically saved on this device.
             </div>
           </div>
         </section>
