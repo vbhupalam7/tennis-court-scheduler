@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 interface Player {
   id: number;
@@ -81,7 +81,7 @@ const GAMES: Game[] = [
 ];
 
 function useAvailability() {
-  const [entries, setEntries] = useState<AvailabilityEntry[]>(() => {
+  const [savedEntries, setSavedEntries] = useState<AvailabilityEntry[]>(() => {
     const raw = window.localStorage.getItem(AVAILABILITY_STORAGE_KEY);
     if (!raw) {
       return [];
@@ -102,9 +102,26 @@ function useAvailability() {
     }
   });
 
-  useEffect(() => {
-    window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(entries));
-  }, [entries]);
+  const [entries, setEntries] = useState<AvailabilityEntry[]>(() => {
+    return savedEntries;
+  });
+
+  const hasUnsavedChanges = useMemo(() => {
+    const draft = new Set(entries.map((entry) => `${entry.playerId}-${entry.gameId}`));
+    const saved = new Set(savedEntries.map((entry) => `${entry.playerId}-${entry.gameId}`));
+
+    if (draft.size !== saved.size) {
+      return true;
+    }
+
+    for (const key of draft) {
+      if (!saved.has(key)) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [entries, savedEntries]);
 
   const toggle = (playerId: number, gameId: number) => {
     setEntries((prev) => {
@@ -125,7 +142,12 @@ function useAvailability() {
 
   const clearAllEntries = () => setEntries([]);
 
-  return { entries, toggle, isAvailable, clearAllEntries };
+  const saveEntries = () => {
+    window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(entries));
+    setSavedEntries(entries);
+  };
+
+  return { entries, toggle, isAvailable, clearAllEntries, hasUnsavedChanges, saveEntries };
 }
 
 function useGameSummaries(
@@ -154,7 +176,8 @@ function useGameSummaries(
 function App() {
   const players = DEFAULT_PLAYERS;
   const games = GAMES;
-  const { entries, toggle, isAvailable, clearAllEntries } = useAvailability();
+  const { entries, toggle, isAvailable, clearAllEntries, hasUnsavedChanges, saveEntries } =
+    useAvailability();
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(
     DEFAULT_PLAYERS[0]?.id ?? null
   );
@@ -272,6 +295,11 @@ function App() {
                 <span className="tag-dot" />
                 Click a game cell in {selectedPlayer?.name ?? "player"}&apos;s row to toggle.
               </span>
+              {hasUnsavedChanges && (
+                <button className="btn btn-save btn-sm" type="button" onClick={saveEntries}>
+                  Save
+                </button>
+              )}
               {entries.length > 0 && (
                 <button
                   className="btn btn-secondary btn-sm"
@@ -367,7 +395,9 @@ function App() {
             </div>
 
             <div className="footer-note">
-              Availability updates are automatically saved on this device.
+              {hasUnsavedChanges
+                ? "You have unsaved schedule updates. Click Save to keep them on this device."
+                : "Schedule updates are saved on this device."}
             </div>
           </div>
         </section>
