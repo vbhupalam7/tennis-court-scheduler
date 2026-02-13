@@ -287,6 +287,41 @@ function App() {
     };
   }, [entries, isLoading]);
 
+  const saveNow = async () => {
+    if (isLoading || isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/availability", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ entries }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+
+      writeEntriesToLocalStorage(entries);
+      setStatusMessage("Changes saved to shared database.");
+      setStatusType("info");
+    } catch (error) {
+      console.error("[availability.saveNow]", error);
+      writeEntriesToLocalStorage(entries);
+      setStatusMessage(
+        "Could not sync to shared database. Changes were saved on this device only."
+      );
+      setStatusType("error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const setAvailability = (playerId: number, gameId: number, available: boolean) => {
     setEntries((previousEntries) => {
       const index = previousEntries.findIndex(
@@ -400,6 +435,14 @@ function App() {
                   Clear all
                 </button>
               )}
+              <button
+                className="btn btn-save btn-sm"
+                type="button"
+                onClick={saveNow}
+                disabled={isLoading || isSaving}
+              >
+                Save now
+              </button>
             </div>
 
             <div className="section-divider" />
