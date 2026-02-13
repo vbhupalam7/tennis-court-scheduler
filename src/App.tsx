@@ -287,19 +287,23 @@ function App() {
     };
   }, [entries, isLoading]);
 
-  const toggle = (playerId: number, gameId: number) => {
+  const setAvailability = (playerId: number, gameId: number, available: boolean) => {
     setEntries((previousEntries) => {
       const index = previousEntries.findIndex(
         (entry) => entry.playerId === playerId && entry.gameId === gameId
       );
 
-      if (index >= 0) {
+      if (available && index < 0) {
+        return [...previousEntries, { playerId, gameId }];
+      }
+
+      if (!available && index >= 0) {
         const nextEntries = [...previousEntries];
         nextEntries.splice(index, 1);
         return nextEntries;
       }
 
-      return [...previousEntries, { playerId, gameId }];
+      return previousEntries;
     });
   };
 
@@ -410,7 +414,7 @@ function App() {
               <div>
                 <div className="card-title">Who&apos;s available?</div>
                 <div className="card-caption">
-                  Select a player, then click game columns to toggle availability.
+                  Use each dropdown to choose Yes or No availability.
                 </div>
               </div>
               <div className="sync-indicator">{isLoading ? "Loading..." : isSaving ? "Syncing..." : "Synced"}</div>
@@ -437,7 +441,7 @@ function App() {
             <div className="tag-row">
               <span className="tag tag-available">
                 <span className="tag-dot" />
-                Click a game cell in {selectedPlayer?.name ?? "selected"} player&apos;s row to toggle.
+                Use each dropdown to choose Yes or No for every player and game.
               </span>
               {entries.length > 0 && (
                 <button
@@ -471,26 +475,23 @@ function App() {
                   <div className="availability-ranking">{player.rating}</div>
                   {games.map((game) => {
                     const active = isAvailable(player.id, game.id);
-                    const isEditable = player.id === selectedPlayerId && !isLoading;
 
                     return (
                       <div
                         key={game.id}
-                        className={`game-cell ${isEditable ? "game-cell-editable" : ""}`}
-                        onClick={() => {
-                          if (isEditable) {
-                            toggle(player.id, game.id);
-                          }
-                        }}
+                        className="game-cell game-cell-editable"
                       >
-                        {active ? (
-                          <span className="slot-pill">
-                            <span className="dot" />
-                            <span>Yes</span>
-                          </span>
-                        ) : (
-                          <span className="slot-empty">—</span>
-                        )}
+                        <select
+                          className="cell-select"
+                          value={active ? "yes" : "no"}
+                          onChange={(event) =>
+                            setAvailability(player.id, game.id, event.target.value === "yes")
+                          }
+                          disabled={isLoading}
+                        >
+                          <option value="yes">Yes</option>
+                          <option value="no">No</option>
+                        </select>
                       </div>
                     );
                   })}
