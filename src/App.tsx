@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface Player {
   id: number;
@@ -20,6 +20,7 @@ interface AvailabilityEntry {
   playerId: number;
   gameId: number;
 }
+
 
 const AVAILABILITY_STORAGE_KEY = "tennis-squad-availability";
 
@@ -81,30 +82,54 @@ const GAMES: Game[] = [
 ];
 
 function useAvailability() {
-  const [savedEntries, setSavedEntries] = useState<AvailabilityEntry[]>(() => {
-    const raw = window.localStorage.getItem(AVAILABILITY_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
+  const [savedEntries, setSavedEntries] = useState<AvailabilityEntry[]>([]);
+  const [entries, setEntries] = useState<AvailabilityEntry[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    try {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) {
-        return [];
+  useEffect(() => {
+    const loadEntries = async () => {
+      try {
+        const response = await fetch("/api/availability");
+        if (!response.ok) {
+          throw new Error("Failed to load availability");
+        }
+
+        const payload = (await response.json()) as { entries?: AvailabilityEntry[] };
+        const nextEntries = Array.isArray(payload.entries)
+          ? payload.entries.filter(
+              (entry): entry is AvailabilityEntry =>
+                typeof entry?.playerId === "number" && typeof entry?.gameId === "number"
+            )
+          : [];
+
+        setEntries(nextEntries);
+        setSavedEntries(nextEntries);
+        setError(null);
+      } catch {
+        const localRaw = window.localStorage.getItem(AVAILABILITY_STORAGE_KEY);
+        if (localRaw) {
+          try {
+            const parsed = JSON.parse(localRaw) as AvailabilityEntry[];
+            const localEntries = Array.isArray(parsed)
+              ? parsed.filter(
+                  (entry): entry is AvailabilityEntry =>
+                    typeof entry?.playerId === "number" && typeof entry?.gameId === "number"
+                )
+              : [];
+            setEntries(localEntries);
+            setSavedEntries(localEntries);
+          } catch {
+            setEntries([]);
+            setSavedEntries([]);
+          }
+        }
+        setError("Could not load shared availability data. Using local device data.");
       }
+    };
 
-      return parsed.filter(
-        (entry): entry is AvailabilityEntry =>
-          typeof entry?.playerId === "number" && typeof entry?.gameId === "number"
-      );
-    } catch {
-      return [];
-    }
-  });
-
-  const [entries, setEntries] = useState<AvailabilityEntry[]>(() => {
-    return savedEntries;
-  });
+    loadEntries();
+  }, []);
 
   const hasUnsavedChanges = useMemo(() => {
     const draft = new Set(entries.map((entry) => `${entry.playerId}-${entry.gameId}`));
@@ -146,9 +171,40 @@ function useAvailability() {
   const isAvailable = (playerId: number, gameId: number) =>
     entries.some((e) => e.playerId === playerId && e.gameId === gameId);
 
-  const saveEntries = () => {
-    window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(entries));
-    setSavedEntries(entries);
+  const saveEntries = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/availability", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ entries }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save availability");
+      }
+
+      const payload = (await response.json()) as { entries?: AvailabilityEntry[] };
+      const persistedEntries = Array.isArray(payload.entries)
+        ? payload.entries.filter(
+            (entry): entry is AvailabilityEntry =>
+              typeof entry?.playerId === "number" && typeof entry?.gameId === "number"
+          )
+        : entries;
+
+      setSavedEntries(persistedEntries);
+      setEntries(persistedEntries);
+      window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(persistedEntries));
+      setError(null);
+    } catch {
+      window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(entries));
+      setSavedEntries(entries);
+      setError("Shared save failed. Saved only on this device.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return {
@@ -157,6 +213,8 @@ function useAvailability() {
     isAvailable,
     hasUnsavedChanges,
     saveEntries,
+    isSaving,
+    error,
   };
 }
 
@@ -192,8 +250,9 @@ function App() {
     isAvailable,
     hasUnsavedChanges,
     saveEntries,
-  } =
-    useAvailability();
+    isSaving,
+    error,
+  } = useAvailability();
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(
     DEFAULT_PLAYERS[0]?.id ?? null
   );
@@ -282,8 +341,8 @@ function App() {
                 Use dropdowns in {selectedPlayer?.name ?? "player"}&apos;s row to set availability.
               </span>
               {hasUnsavedChanges && (
-                <button className="btn btn-save btn-sm" type="button" onClick={saveEntries}>
-                  Save
+                <button className="btn btn-save btn-sm" type="button" onClick={saveEntries} disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save"}
                 </button>
               )}
             </div>
@@ -380,9 +439,11 @@ function App() {
             </div>
 
             <div className="footer-note">
-              {hasUnsavedChanges
-                ? "You have unsaved schedule updates. Click Save to keep them on this device."
-                : "Schedule updates are saved on this device."}
+              {error
+                ? error
+                : hasUnsavedChanges
+                  ? "You have unsaved schedule updates. Click Save to sync them for everyone."
+                  : "Schedule updates are synced across sessions."}
             </div>
           </div>
         </section>
