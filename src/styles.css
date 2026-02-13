@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
   --bg: #050816;
   --bg-elevated: #0f172a;
   --accent: #22c55e;
@@ -25,12 +25,25 @@ body {
     "Segoe UI", sans-serif;
   background: radial-gradient(circle at top, #1e293b 0, #020617 45%, #000 100%);
   color: var(--text);
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.16), transparent 35%),
+    radial-gradient(circle at 80% 12%, rgba(34, 197, 94, 0.12), transparent 30%);
 }
 
 .app-shell {
   max-width: 1120px;
   margin: 0 auto;
   padding: 24px 16px 40px;
+  position: relative;
+  z-index: 1;
 }
 
 .app-header {
@@ -43,9 +56,10 @@ body {
 }
 
 .app-title {
-  font-size: 1.6rem;
-  font-weight: 650;
+  font-size: clamp(1.6rem, 2.4vw, 2rem);
+  font-weight: 700;
   letter-spacing: 0.02em;
+  text-shadow: 0 8px 24px rgba(15, 23, 42, 0.7);
 }
 
 .app-subtitle {
@@ -80,6 +94,68 @@ body {
   gap: 20px;
 }
 
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 700px) {
+  .hero-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.hero-metric-card {
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  background: linear-gradient(140deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.8));
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 14px 32px rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(8px);
+}
+
+.hero-metric-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.hero-metric-value {
+  margin-top: 6px;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.hero-metric-value-name {
+  font-size: 1rem;
+}
+
+.hero-metric-foot {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.hero-progress {
+  margin-top: 10px;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.hero-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #34d399, #22c55e);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
+}
+
 @media (min-width: 900px) {
   .layout-grid {
     grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
@@ -88,13 +164,11 @@ body {
 }
 
 .card {
-  background: radial-gradient(circle at top left, #0b1220 0, #020617 55%, #000 100%);
+  background: linear-gradient(145deg, rgba(11, 18, 32, 0.95), rgba(0, 0, 0, 0.9));
   border-radius: 18px;
   padding: 18px 18px 16px;
   border: 1px solid rgba(148, 163, 184, 0.35);
-  box-shadow:
-    0 22px 45px rgba(15, 23, 42, 0.9),
-    0 0 0 1px rgba(15, 23, 42, 0.9);
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.65);
   position: relative;
   overflow: hidden;
 }
@@ -106,7 +180,7 @@ body {
   background:
     radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.14), transparent 55%),
     radial-gradient(circle at 100% 0, rgba(56, 189, 248, 0.08), transparent 50%);
-  opacity: 0.9;
+  opacity: 1;
   mix-blend-mode: screen;
   pointer-events: none;
 }
@@ -357,7 +431,7 @@ label {
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.45);
   background: rgba(15, 23, 42, 0.94);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .availability-grid-header,
@@ -366,6 +440,7 @@ label {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.5fr) repeat(4, minmax(0, 0.8fr));
   font-size: 0.75rem;
+  min-width: 760px;
 }
 
 .availability-grid-header {
@@ -386,6 +461,14 @@ label {
 
 .availability-grid-row:nth-child(even) {
   background: rgba(15, 23, 42, 0.9);
+}
+
+.availability-grid-row {
+  transition: background-color 0.16s ease;
+}
+
+.availability-grid-row:hover {
+  background: rgba(30, 41, 59, 0.9);
 }
 
 .availability-name {
