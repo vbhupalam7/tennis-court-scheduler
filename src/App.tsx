@@ -209,6 +209,9 @@ function App() {
     return sorted[0]?.count > 0 ? sorted[0] : null;
   }, [gameSummaries]);
 
+  const totalSlots = players.length * games.length;
+  const completionPct = Math.round((entries.length / totalSlots) * 100);
+
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId) ?? players[0];
 
   return (
@@ -227,6 +230,28 @@ function App() {
           </span>
         </div>
       </header>
+
+      <section className="hero-metrics" aria-label="Planner highlights">
+        <article className="hero-metric-card">
+          <div className="hero-metric-label">Availability marked</div>
+          <div className="hero-metric-value">{entries.length}</div>
+          <div className="hero-metric-foot">of {totalSlots} total game slots</div>
+        </article>
+        <article className="hero-metric-card">
+          <div className="hero-metric-label">Schedule completion</div>
+          <div className="hero-metric-value">{completionPct}%</div>
+          <div className="hero-progress" role="presentation">
+            <span style={{ width: `${completionPct}%` }} />
+          </div>
+        </article>
+        <article className="hero-metric-card">
+          <div className="hero-metric-label">Currently editing</div>
+          <div className="hero-metric-value hero-metric-value-name">
+            {selectedPlayer?.name ?? "No player"}
+          </div>
+          <div className="hero-metric-foot">{selectedPlayer?.city} · {selectedPlayer?.rating}</div>
+        </article>
+      </section>
 
       <div className="layout-grid">
         <section className="card">
