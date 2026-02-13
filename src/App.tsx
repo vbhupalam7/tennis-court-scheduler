@@ -249,62 +249,7 @@ function App() {
         </article>
       </section>
 
-      <div className="layout-grid">
-        <section className="card">
-          <div className="card-inner">
-            <div className="card-header">
-              <div>
-                <div className="card-title">Squad &amp; Schedule</div>
-                <div className="card-caption">
-                  Your roster and upcoming matches.
-                </div>
-              </div>
-              <div className="chip-row">
-                <span className="chip chip-strong">
-                  <span className="chip-count">
-                    <span className="chip-count-dot" />
-                    {players.length} players
-                  </span>
-                </span>
-                <span className="chip">
-                  <span className="chip-count">
-                    <span className="chip-count-dot" />
-                    {games.length} games
-                  </span>
-                </span>
-              </div>
-            </div>
-
-            <div className="field">
-              <label>Squad roster</label>
-              <div className="list">
-                {players.map((player) => (
-                  <div key={player.id} className="pill-sm">
-                    <strong>{player.name}</strong> · {player.city} · {player.rating}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="section-divider" />
-
-            <div className="field">
-              <label>Upcoming matches</label>
-              <div className="list">
-                {games.map((game) => (
-                  <div key={game.id} className="pill-sm">
-                    <strong>vs {game.opponent}</strong> · {game.date} · {game.time} ·{" "}
-                    <span className={game.homeAway === "Home" ? "home-badge" : "away-badge"}>
-                      {game.homeAway}
-                    </span>
-                    {game.location ? ` · ${game.location}` : ""}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
+      <div className="layout-grid layout-grid-centered">
         <section className="card">
           <div className="card-inner">
             <div className="card-header">
