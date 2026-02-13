@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 interface Player {
   id: number;
@@ -16,12 +16,41 @@ interface Game {
   location: string;
 }
 
+type AvailabilityStatus = "yes" | "no";
+
 interface AvailabilityEntry {
   playerId: number;
   gameId: number;
+  status: AvailabilityStatus;
 }
 
 const AVAILABILITY_STORAGE_KEY = "tennis-squad-availability";
+
+function readStoredAvailability(): AvailabilityEntry[] {
+  const raw = window.localStorage.getItem(AVAILABILITY_STORAGE_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter(
+        (entry): entry is Omit<AvailabilityEntry, "status"> & { status?: unknown } =>
+          typeof entry?.playerId === "number" && typeof entry?.gameId === "number"
+      )
+      .map((entry) => ({
+        ...entry,
+        status: entry.status === "no" ? "no" : "yes",
+      }));
+  } catch {
+    return [];
+  }
+}
 
 const DEFAULT_PLAYERS: Player[] = [
   { id: 1, name: "Ankoti, Digvijay", city: "San Ramon", rating: "3.5C" },
@@ -81,51 +110,63 @@ const GAMES: Game[] = [
 ];
 
 function useAvailability() {
-  const [entries, setEntries] = useState<AvailabilityEntry[]>(() => {
-    const raw = window.localStorage.getItem(AVAILABILITY_STORAGE_KEY);
-    if (!raw) {
-      return [];
+  const initialEntries = useMemo(() => readStoredAvailability(), []);
+  const [savedEntries, setSavedEntries] = useState<AvailabilityEntry[]>(initialEntries);
+  const [entries, setEntries] = useState<AvailabilityEntry[]>(initialEntries);
+
+  const hasUnsavedChanges = useMemo(() => {
+    const draft = new Set(entries.map((entry) => `${entry.playerId}-${entry.gameId}-${entry.status}`));
+    const saved = new Set(savedEntries.map((entry) => `${entry.playerId}-${entry.gameId}-${entry.status}`));
+
+    if (draft.size !== saved.size) {
+      return true;
     }
 
-    try {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) {
-        return [];
+    for (const key of draft) {
+      if (!saved.has(key)) {
+        return true;
       }
-
-      return parsed.filter(
-        (entry): entry is AvailabilityEntry =>
-          typeof entry?.playerId === "number" && typeof entry?.gameId === "number"
-      );
-    } catch {
-      return [];
     }
-  });
 
-  useEffect(() => {
-    window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(entries));
-  }, [entries]);
+    return false;
+  }, [entries, savedEntries]);
 
   const toggle = (playerId: number, gameId: number) => {
     setEntries((prev) => {
-      const index = prev.findIndex(
-        (e) => e.playerId === playerId && e.gameId === gameId
-      );
-      if (index >= 0) {
-        const copy = [...prev];
-        copy.splice(index, 1);
-        return copy;
+      const entry = prev.find((e) => e.playerId === playerId && e.gameId === gameId);
+
+      if (!entry) {
+        return [...prev, { playerId, gameId, status: "yes" }];
       }
-      return [...prev, { playerId, gameId }];
+
+      if (entry.status === "yes") {
+        return prev.map((e) =>
+          e.playerId === playerId && e.gameId === gameId ? { ...e, status: "no" } : e
+        );
+      }
+
+      return prev.filter((e) => !(e.playerId === playerId && e.gameId === gameId));
     });
   };
 
-  const isAvailable = (playerId: number, gameId: number) =>
-    entries.some((e) => e.playerId === playerId && e.gameId === gameId);
+  const getAvailabilityStatus = (playerId: number, gameId: number) =>
+    entries.find((e) => e.playerId === playerId && e.gameId === gameId)?.status ?? null;
 
   const clearAllEntries = () => setEntries([]);
 
-  return { entries, toggle, isAvailable, clearAllEntries };
+  const saveEntries = () => {
+    window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(entries));
+    setSavedEntries(entries);
+  };
+
+  return {
+    entries,
+    toggle,
+    getAvailabilityStatus,
+    clearAllEntries,
+    hasUnsavedChanges,
+    saveEntries,
+  };
 }
 
 function useGameSummaries(
@@ -136,7 +177,7 @@ function useGameSummaries(
   return useMemo(() => {
     return games.map((game) => {
       const availablePlayerIds = entries
-        .filter((e) => e.gameId === game.id)
+        .filter((e) => e.gameId === game.id && e.status === "yes")
         .map((e) => e.playerId);
       const uniqueIds = Array.from(new Set(availablePlayerIds));
       const availablePlayers = uniqueIds
@@ -154,7 +195,14 @@ function useGameSummaries(
 function App() {
   const players = DEFAULT_PLAYERS;
   const games = GAMES;
-  const { entries, toggle, isAvailable, clearAllEntries } = useAvailability();
+  const {
+    entries,
+    toggle,
+    getAvailabilityStatus,
+    clearAllEntries,
+    hasUnsavedChanges,
+    saveEntries,
+  } = useAvailability();
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(
     DEFAULT_PLAYERS[0]?.id ?? null
   );
@@ -270,17 +318,24 @@ function App() {
             <div className="tag-row">
               <span className="tag tag-available">
                 <span className="tag-dot" />
-                Click a game cell in {selectedPlayer?.name ?? "player"}&apos;s row to toggle.
+                Click a game cell in {selectedPlayer?.name ?? "player"}&apos;s row to cycle Yes / No / blank.
               </span>
-              {entries.length > 0 && (
-                <button
-                  className="btn btn-secondary btn-sm"
-                  type="button"
-                  onClick={clearAllEntries}
-                >
-                  Clear all
-                </button>
-              )}
+              <button
+                className="btn btn-save btn-sm"
+                type="button"
+                onClick={saveEntries}
+                disabled={!hasUnsavedChanges}
+              >
+                Save
+              </button>
+              <button
+                className="btn btn-secondary btn-sm"
+                type="button"
+                onClick={clearAllEntries}
+                disabled={entries.length === 0}
+              >
+                Clear all
+              </button>
             </div>
 
             <div className="section-divider" />
@@ -302,7 +357,7 @@ function App() {
                   <div className="availability-name">{player.name}</div>
                   <div className="availability-ranking">{player.rating}</div>
                   {games.map((game) => {
-                    const active = isAvailable(player.id, game.id);
+                    const status = getAvailabilityStatus(player.id, game.id);
                     return (
                       <div
                         key={game.id}
@@ -311,10 +366,15 @@ function App() {
                           player.id === selectedPlayerId && toggle(player.id, game.id)
                         }
                       >
-                        {active ? (
+                        {status === "yes" ? (
                           <span className="slot-pill">
                             <span className="dot" />
                             <span>Yes</span>
+                          </span>
+                        ) : status === "no" ? (
+                          <span className="slot-pill slot-pill-no">
+                            <span className="dot" />
+                            <span>No</span>
                           </span>
                         ) : (
                           <span className="slot-empty">—</span>
@@ -367,7 +427,9 @@ function App() {
             </div>
 
             <div className="footer-note">
-              Availability updates are automatically saved on this device.
+              {hasUnsavedChanges
+                ? "You have unsaved schedule updates. Click Save to keep them on this device."
+                : "Schedule updates are saved on this device."}
             </div>
           </div>
         </section>
