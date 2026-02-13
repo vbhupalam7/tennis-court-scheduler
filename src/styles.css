@@ -100,6 +100,34 @@ body::before {
   gap: 20px;
 }
 
+.layout-grid-centered {
+  grid-template-columns: minmax(0, 920px);
+  justify-content: center;
+}
+
+.layout-grid-centered .card {
+  margin: 0 auto;
+  box-shadow:
+    0 24px 45px rgba(15, 23, 42, 0.65),
+    0 0 0 1px rgba(167, 139, 250, 0.28),
+    0 0 40px rgba(139, 92, 246, 0.25);
+}
+
+.layout-grid-centered .card-header {
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.layout-grid-centered .card-title {
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+}
+
+.layout-grid-centered .card-caption {
+  color: #c4b5fd;
+}
+
 .hero-metrics {
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -164,7 +192,7 @@ body::before {
 }
 
 @media (min-width: 900px) {
-  .layout-grid {
+  .layout-grid:not(.layout-grid-centered) {
     grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
     align-items: flex-start;
   }
