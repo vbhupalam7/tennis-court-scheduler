@@ -342,10 +342,6 @@ function App() {
     });
   };
 
-  const clearAllEntries = () => {
-    setEntries([]);
-  };
-
   const isAvailable = (playerId: number, gameId: number) => {
     return entries.some(
       (entry) => entry.playerId === playerId && entry.gameId === gameId
@@ -425,16 +421,6 @@ function App() {
                 <span className="tag-dot" />
                 Use each dropdown to choose Yes or No for every player and game.
               </span>
-              {entries.length > 0 && (
-                <button
-                  className="btn btn-secondary btn-sm"
-                  type="button"
-                  onClick={clearAllEntries}
-                  disabled={isLoading}
-                >
-                  Clear all
-                </button>
-              )}
               <button
                 className="btn btn-save btn-sm"
                 type="button"
