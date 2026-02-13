@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Player {
   id: number;
@@ -21,6 +21,11 @@ interface AvailabilityEntry {
   gameId: number;
 }
 
+interface AvailabilityResponse {
+  entries?: unknown;
+}
+
+const LOCAL_STORAGE_KEY = "tennis-court-availability";
 
 const DEFAULT_PLAYERS: Player[] = [
   { id: 1, name: "Ankoti, Digvijay", city: "San Ramon", rating: "3.5C" },
@@ -79,121 +84,55 @@ const GAMES: Game[] = [
   },
 ];
 
-function useAvailability() {
-  const [savedEntries, setSavedEntries] = useState<AvailabilityEntry[]>([]);
-  const [entries, setEntries] = useState<AvailabilityEntry[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function normalizeEntries(value: unknown): AvailabilityEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
 
-  useEffect(() => {
-    const loadEntries = async () => {
-      try {
-        const response = await fetch("/api/availability");
-        if (!response.ok) {
-          throw new Error("Failed to load availability");
-        }
+  const deduped = new Map<string, AvailabilityEntry>();
 
-        const payload = (await response.json()) as { entries?: AvailabilityEntry[] };
-        const nextEntries = Array.isArray(payload.entries)
-          ? payload.entries.filter(
-              (entry): entry is AvailabilityEntry =>
-                typeof entry?.playerId === "number" && typeof entry?.gameId === "number"
-            )
-          : [];
-
-        setEntries(nextEntries);
-        setSavedEntries(nextEntries);
-        setError(null);
-      } catch {
-        setError("Could not load shared availability data.");
-      }
-    };
-
-    loadEntries();
-  }, []);
-
-  const hasUnsavedChanges = useMemo(() => {
-    const draft = new Set(entries.map((entry) => `${entry.playerId}-${entry.gameId}`));
-    const saved = new Set(savedEntries.map((entry) => `${entry.playerId}-${entry.gameId}`));
-
-    if (draft.size !== saved.size) {
-      return true;
+  for (const item of value) {
+    if (!item || typeof item !== "object") {
+      continue;
     }
 
-    for (const key of draft) {
-      if (!saved.has(key)) {
-        return true;
-      }
+    const playerId = Number((item as Record<string, unknown>).playerId);
+    const gameId = Number((item as Record<string, unknown>).gameId);
+
+    if (!Number.isInteger(playerId) || !Number.isInteger(gameId)) {
+      continue;
     }
 
-    return false;
-  }, [entries, savedEntries]);
-
-  const setAvailability = (playerId: number, gameId: number, available: boolean) => {
-    setEntries((prev) => {
-      const index = prev.findIndex(
-        (e) => e.playerId === playerId && e.gameId === gameId
-      );
-
-      if (available && index === -1) {
-        return [...prev, { playerId, gameId }];
-      }
-
-      if (!available && index >= 0) {
-        const copy = [...prev];
-        copy.splice(index, 1);
-        return copy;
-      }
-
-      return prev;
-    });
-  };
-
-  const isAvailable = (playerId: number, gameId: number) =>
-    entries.some((e) => e.playerId === playerId && e.gameId === gameId);
-
-  const saveEntries = async () => {
-    setIsSaving(true);
-    try {
-      const response = await fetch("/api/availability", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ entries }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save availability");
-      }
-
-      const payload = (await response.json()) as { entries?: AvailabilityEntry[] };
-      const persistedEntries = Array.isArray(payload.entries)
-        ? payload.entries.filter(
-            (entry): entry is AvailabilityEntry =>
-              typeof entry?.playerId === "number" && typeof entry?.gameId === "number"
-          )
-        : entries;
-
-      setSavedEntries(persistedEntries);
-      setEntries(persistedEntries);
-      setError(null);
-    } catch {
-      setError("Could not save availability changes.");
-    } finally {
-      setIsSaving(false);
+    if (playerId <= 0 || gameId <= 0) {
+      continue;
     }
-  };
 
-  return {
-    entries,
-    setAvailability,
-    isAvailable,
-    hasUnsavedChanges,
-    saveEntries,
-    isSaving,
-    error,
-  };
+    deduped.set(`${playerId}:${gameId}`, { playerId, gameId });
+  }
+
+  return [...deduped.values()];
+}
+
+function readEntriesFromLocalStorage(): AvailabilityEntry[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    return normalizeEntries(JSON.parse(raw));
+  } catch (error) {
+    console.error("[localStorage.read]", error);
+    return [];
+  }
+}
+
+function writeEntriesToLocalStorage(entries: AvailabilityEntry[]): void {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(entries));
+  } catch (error) {
+    console.error("[localStorage.write]", error);
+  }
 }
 
 function useGameSummaries(
@@ -204,12 +143,14 @@ function useGameSummaries(
   return useMemo(() => {
     return games.map((game) => {
       const availablePlayerIds = entries
-        .filter((e) => e.gameId === game.id)
-        .map((e) => e.playerId);
+        .filter((entry) => entry.gameId === game.id)
+        .map((entry) => entry.playerId);
+
       const uniqueIds = Array.from(new Set(availablePlayerIds));
       const availablePlayers = uniqueIds
-        .map((id) => players.find((p) => p.id === id))
+        .map((id) => players.find((player) => player.id === id))
         .filter(Boolean) as Player[];
+
       return {
         game,
         availablePlayers,
@@ -222,18 +163,155 @@ function useGameSummaries(
 function App() {
   const players = DEFAULT_PLAYERS;
   const games = GAMES;
-  const {
-    entries,
-    setAvailability,
-    isAvailable,
-    hasUnsavedChanges,
-    saveEntries,
-    isSaving,
-    error,
-  } = useAvailability();
+
+  const [entries, setEntries] = useState<AvailabilityEntry[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(
     DEFAULT_PLAYERS[0]?.id ?? null
   );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusType, setStatusType] = useState<"info" | "error">("info");
+
+  const hasLoadedAvailability = useRef(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadAvailability() {
+      setIsLoading(true);
+
+      try {
+        const response = await fetch("/api/availability", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+
+        const payload = (await response.json()) as AvailabilityResponse;
+        const serverEntries = normalizeEntries(payload.entries);
+
+        setEntries(serverEntries);
+        writeEntriesToLocalStorage(serverEntries);
+        setStatusMessage("Shared availability loaded from database.");
+        setStatusType("info");
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        console.error("[availability.load]", error);
+        const localEntries = readEntriesFromLocalStorage();
+        setEntries(localEntries);
+
+        if (localEntries.length > 0) {
+          setStatusMessage(
+            "Shared database is unavailable. Showing last saved data from this device."
+          );
+        } else {
+          setStatusMessage(
+            "Shared database is unavailable. Starting with an empty schedule."
+          );
+        }
+
+        setStatusType("error");
+      } finally {
+        if (!controller.signal.aborted) {
+          hasLoadedAvailability.current = true;
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadAvailability();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedAvailability.current || isLoading) {
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setIsSaving(true);
+
+      try {
+        const response = await fetch("/api/availability", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ entries }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+
+        writeEntriesToLocalStorage(entries);
+
+        if (!cancelled) {
+          setStatusMessage("Changes synced to shared database.");
+          setStatusType("info");
+        }
+      } catch (error) {
+        console.error("[availability.save]", error);
+        writeEntriesToLocalStorage(entries);
+
+        if (!cancelled) {
+          setStatusMessage(
+            "Could not sync to shared database. Changes were saved on this device only."
+          );
+          setStatusType("error");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSaving(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [entries, isLoading]);
+
+  const toggle = (playerId: number, gameId: number) => {
+    setEntries((previousEntries) => {
+      const index = previousEntries.findIndex(
+        (entry) => entry.playerId === playerId && entry.gameId === gameId
+      );
+
+      if (index >= 0) {
+        const nextEntries = [...previousEntries];
+        nextEntries.splice(index, 1);
+        return nextEntries;
+      }
+
+      return [...previousEntries, { playerId, gameId }];
+    });
+  };
+
+  const clearAllEntries = () => {
+    setEntries([]);
+  };
+
+  const isAvailable = (playerId: number, gameId: number) => {
+    return entries.some(
+      (entry) => entry.playerId === playerId && entry.gameId === gameId
+    );
+  };
 
   const gameSummaries = useGameSummaries(players, games, entries);
 
@@ -242,10 +320,8 @@ function App() {
     return sorted[0]?.count > 0 ? sorted[0] : null;
   }, [gameSummaries]);
 
-  const totalSlots = players.length * games.length;
-  const completionPct = Math.round((entries.length / totalSlots) * 100);
-
-  const selectedPlayer = players.find((p) => p.id === selectedPlayerId) ?? players[0];
+  const selectedPlayer =
+    players.find((player) => player.id === selectedPlayerId) ?? null;
 
   return (
     <div className="app-shell">
@@ -259,43 +335,85 @@ function App() {
         <div className="pill">
           <span className="pill-dot" />
           <span>
-            {players.length} player{players.length !== 1 ? "s" : ""} · {games.length} game{games.length !== 1 ? "s" : ""}
+            {players.length} player{players.length !== 1 ? "s" : ""} · {games.length} game
+            {games.length !== 1 ? "s" : ""}
           </span>
         </div>
       </header>
 
-      <section className="hero-metrics" aria-label="Planner highlights">
-        <article className="hero-metric-card">
-          <div className="hero-metric-label">Availability marked</div>
-          <div className="hero-metric-value">{entries.length}</div>
-          <div className="hero-metric-foot">of {totalSlots} total game slots</div>
-        </article>
-        <article className="hero-metric-card">
-          <div className="hero-metric-label">Schedule completion</div>
-          <div className="hero-metric-value">{completionPct}%</div>
-          <div className="hero-progress" role="presentation">
-            <span style={{ width: `${completionPct}%` }} />
-          </div>
-        </article>
-        <article className="hero-metric-card">
-          <div className="hero-metric-label">Currently editing</div>
-          <div className="hero-metric-value hero-metric-value-name">
-            {selectedPlayer?.name ?? "No player"}
-          </div>
-          <div className="hero-metric-foot">{selectedPlayer?.city} · {selectedPlayer?.rating}</div>
-        </article>
-      </section>
+      {statusMessage && (
+        <div
+          className={`status-banner ${statusType === "error" ? "status-error" : "status-info"}`}
+          role={statusType === "error" ? "alert" : "status"}
+        >
+          {statusMessage}
+        </div>
+      )}
 
-      <div className="layout-grid layout-grid-centered">
+      <div className="layout-grid">
+        <section className="card">
+          <div className="card-inner">
+            <div className="card-header">
+              <div>
+                <div className="card-title">Squad &amp; Schedule</div>
+                <div className="card-caption">Your roster and upcoming matches.</div>
+              </div>
+              <div className="chip-row">
+                <span className="chip chip-strong">
+                  <span className="chip-count">
+                    <span className="chip-count-dot" />
+                    {players.length} players
+                  </span>
+                </span>
+                <span className="chip">
+                  <span className="chip-count">
+                    <span className="chip-count-dot" />
+                    {games.length} games
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <div className="field">
+              <label>Squad roster</label>
+              <div className="list">
+                {players.map((player) => (
+                  <div key={player.id} className="pill-sm">
+                    <strong>{player.name}</strong> · {player.city} · {player.rating}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="section-divider" />
+
+            <div className="field">
+              <label>Upcoming matches</label>
+              <div className="list">
+                {games.map((game) => (
+                  <div key={game.id} className="pill-sm">
+                    <strong>vs {game.opponent}</strong> · {game.date} · {game.time} ·{" "}
+                    <span className={game.homeAway === "Home" ? "home-badge" : "away-badge"}>
+                      {game.homeAway}
+                    </span>
+                    {game.location ? ` · ${game.location}` : ""}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="card">
           <div className="card-inner">
             <div className="card-header">
               <div>
                 <div className="card-title">Who&apos;s available?</div>
                 <div className="card-caption">
-                  Select a player, then choose Yes or No for each game.
+                  Select a player, then click game columns to toggle availability.
                 </div>
               </div>
+              <div className="sync-indicator">{isLoading ? "Loading..." : isSaving ? "Syncing..." : "Synced"}</div>
             </div>
 
             <div className="field">
@@ -303,11 +421,14 @@ function App() {
               <select
                 className="select"
                 value={selectedPlayer?.id ?? ""}
-                onChange={(e) => setSelectedPlayerId(Number(e.target.value) || null)}
+                onChange={(event) => {
+                  const nextId = Number(event.target.value);
+                  setSelectedPlayerId(Number.isInteger(nextId) ? nextId : null);
+                }}
               >
-                {players.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
+                {players.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
                   </option>
                 ))}
               </select>
@@ -316,11 +437,16 @@ function App() {
             <div className="tag-row">
               <span className="tag tag-available">
                 <span className="tag-dot" />
-                Use dropdowns in {selectedPlayer?.name ?? "player"}&apos;s row to set availability.
+                Click a game cell in {selectedPlayer?.name ?? "selected"} player&apos;s row to toggle.
               </span>
-              {hasUnsavedChanges && (
-                <button className="btn btn-save btn-sm" type="button" onClick={saveEntries} disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save"}
+              {entries.length > 0 && (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  type="button"
+                  onClick={clearAllEntries}
+                  disabled={isLoading}
+                >
+                  Clear all
                 </button>
               )}
             </div>
@@ -345,29 +471,25 @@ function App() {
                   <div className="availability-ranking">{player.rating}</div>
                   {games.map((game) => {
                     const active = isAvailable(player.id, game.id);
+                    const isEditable = player.id === selectedPlayerId && !isLoading;
+
                     return (
                       <div
                         key={game.id}
-                        className={`game-cell ${player.id === selectedPlayerId ? "game-cell-editable" : ""}`}
+                        className={`game-cell ${isEditable ? "game-cell-editable" : ""}`}
+                        onClick={() => {
+                          if (isEditable) {
+                            toggle(player.id, game.id);
+                          }
+                        }}
                       >
-                        {player.id === selectedPlayerId ? (
-                          <select
-                            className="cell-select"
-                            value={active ? "yes" : "no"}
-                            onChange={(e) =>
-                              setAvailability(player.id, game.id, e.target.value === "yes")
-                            }
-                          >
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                          </select>
-                        ) : active ? (
+                        {active ? (
                           <span className="slot-pill">
                             <span className="dot" />
                             <span>Yes</span>
                           </span>
                         ) : (
-                          <span className="slot-empty">No</span>
+                          <span className="slot-empty">—</span>
                         )}
                       </div>
                     );
@@ -378,7 +500,7 @@ function App() {
                 <div className="availability-footer-label">Available</div>
                 <div />
                 {games.map((game) => {
-                  const summary = gameSummaries.find((s) => s.game.id === game.id);
+                  const summary = gameSummaries.find((item) => item.game.id === game.id);
                   return (
                     <div key={game.id} className="availability-footer-count">
                       <strong>{summary?.count ?? 0}</strong> / {players.length}
@@ -392,17 +514,17 @@ function App() {
               {bestGame ? (
                 <>
                   <div className="summary-main">
-                    <strong>Most available</strong>: vs {bestGame.game.opponent} on{" "}
-                    {bestGame.game.date} at {bestGame.game.time} ({bestGame.game.homeAway} · {bestGame.game.location}) with{" "}
-                    <strong>{bestGame.count}</strong> player{bestGame.count !== 1 ? "s" : ""}.
+                    <strong>Most available</strong>: vs {bestGame.game.opponent} on {bestGame.game.date}
+                    at {bestGame.game.time} ({bestGame.game.homeAway} · {bestGame.game.location}) with
+                    <strong> {bestGame.count}</strong> player{bestGame.count !== 1 ? "s" : ""}.
                   </div>
                   <div className="summary-row">
                     <div>
                       <div className="summary-label">Available players</div>
                       <div className="pill-row">
-                        {bestGame.availablePlayers.map((p) => (
-                          <span key={p.id} className="pill-sm pill-sm-strong">
-                            {p.name}
+                        {bestGame.availablePlayers.map((player) => (
+                          <span key={player.id} className="pill-sm pill-sm-strong">
+                            {player.name}
                           </span>
                         ))}
                       </div>
@@ -417,11 +539,8 @@ function App() {
             </div>
 
             <div className="footer-note">
-              {error
-                ? error
-                : hasUnsavedChanges
-                  ? "You have unsaved schedule updates. Click Save to sync them for everyone."
-                  : "Schedule updates are synced across sessions."}
+              Availability is persisted to a shared SQLite database via `/api/availability`, with
+              local-device fallback when the server is unavailable.
             </div>
           </div>
         </section>
