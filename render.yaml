@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: tennis-court-scheduler
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build:prod
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: tennis-court-db
+      mountPath: /var/data
+      sizeGB: 1

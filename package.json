@@ -2,10 +2,15 @@
   "name": "tennis-court-scheduler",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:prod": "VITE_BASE_PATH=/ vite build",
     "preview": "vite preview",
+    "start": "node server/index.cjs",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {

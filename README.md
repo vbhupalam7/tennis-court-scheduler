@@ -111,3 +111,41 @@ If you’d like, we can extend this with:
 - Browser storage (localStorage) so data survives refresh.
 - A simple backend (e.g. Node + SQLite or Supabase) so all 10 teammates can update their own availability from their phones.
 
+
+### Production deployment for shared team sync (Node + SQLite)
+
+GitHub Pages is static-only, so `/api/availability` cannot run there.
+For real multi-device shared availability, deploy this repo as a Node web service.
+
+#### What is included now
+
+- `server/index.cjs`: production HTTP server.
+  - Serves built frontend from `dist/`.
+  - Exposes `GET /api/health`, `GET /api/availability`, `PUT /api/availability`.
+  - Persists team availability in SQLite.
+- `npm run build:prod`: builds frontend with `VITE_BASE_PATH=/` for server hosting.
+- `npm start`: runs the production server.
+- `render.yaml`: deployment blueprint with persistent disk for SQLite.
+
+#### Local production run
+
+```bash
+npm ci
+npm run build:prod
+PORT=3000 npm start
+```
+
+Then open `http://localhost:3000`.
+
+#### Render deployment (recommended)
+
+1. Push this repo to GitHub.
+2. In Render, create a **Blueprint** service from the repo (it will read `render.yaml`).
+3. Deploy.
+4. Use the generated Render URL with your team.
+
+Notes:
+
+- SQLite file lives under `DATA_DIR` (defaults to `data/`).
+- In Render, it is mounted to persistent disk at `/var/data`.
+- Keep Node version at 22+ because `node:sqlite` is required.
