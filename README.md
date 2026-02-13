@@ -149,3 +149,17 @@ Notes:
 - SQLite file lives under `DATA_DIR` (defaults to `data/`).
 - In Render, it is mounted to persistent disk at `/var/data`.
 - Keep Node version at 22+ because `node:sqlite` is required.
+
+#### Auto-redeploy Render from GitHub Actions
+
+This repo includes `.github/workflows/render-deploy.yml`, which triggers Render deploys on every push to `main`.
+
+Setup required once:
+
+1. In Render, open your service -> **Settings** -> **Deploy Hook** and copy the hook URL.
+2. In GitHub, open repo -> **Settings** -> **Secrets and variables** -> **Actions**.
+3. Add repository secret:
+   - Name: `RENDER_DEPLOY_HOOK_URL`
+   - Value: the deploy hook URL from Render
+
+After that, each push to `main` will trigger a fresh Render deployment automatically.
