@@ -146,8 +146,6 @@ function useAvailability() {
   const isAvailable = (playerId: number, gameId: number) =>
     entries.some((e) => e.playerId === playerId && e.gameId === gameId);
 
-  const clearAllEntries = () => setEntries([]);
-
   const saveEntries = () => {
     window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(entries));
     setSavedEntries(entries);
@@ -157,7 +155,6 @@ function useAvailability() {
     entries,
     setAvailability,
     isAvailable,
-    clearAllEntries,
     hasUnsavedChanges,
     saveEntries,
   };
@@ -193,7 +190,6 @@ function App() {
     entries,
     setAvailability,
     isAvailable,
-    clearAllEntries,
     hasUnsavedChanges,
     saveEntries,
   } =
@@ -343,15 +339,6 @@ function App() {
               {hasUnsavedChanges && (
                 <button className="btn btn-save btn-sm" type="button" onClick={saveEntries}>
                   Save
-                </button>
-              )}
-              {entries.length > 0 && (
-                <button
-                  className="btn btn-secondary btn-sm"
-                  type="button"
-                  onClick={clearAllEntries}
-                >
-                  Clear all
                 </button>
               )}
             </div>
