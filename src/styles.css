@@ -468,12 +468,28 @@ label {
 }
 
 .game-cell-editable {
-  cursor: pointer;
   background: rgba(34, 197, 94, 0.04);
 }
 
 .game-cell-editable:hover {
   background: rgba(34, 197, 94, 0.1);
+}
+
+.cell-select {
+  width: 100%;
+  min-width: 58px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--text);
+  font-size: 0.7rem;
+  padding: 3px 6px;
+}
+
+.cell-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.4);
+  outline: none;
 }
 
 .availability-grid-footer {
