@@ -263,6 +263,20 @@ label {
   background: rgba(15, 23, 42, 0.9);
 }
 
+.btn-save {
+  background: radial-gradient(circle at 0 0, #16a34a, #22c55e);
+  color: #ecfdf5;
+  box-shadow:
+    0 12px 25px rgba(34, 197, 94, 0.45),
+    0 0 0 1px rgba(21, 128, 61, 0.8);
+}
+
+.btn-save:hover {
+  box-shadow:
+    0 14px 30px rgba(34, 197, 94, 0.55),
+    0 0 0 1px rgba(21, 128, 61, 0.9);
+}
+
 .section-divider {
   margin: 10px 0 8px;
   border: none;
@@ -574,4 +588,3 @@ label {
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(55, 65, 81, 0.9);
 }
-
