@@ -123,17 +123,23 @@ function useAvailability() {
     return false;
   }, [entries, savedEntries]);
 
-  const toggle = (playerId: number, gameId: number) => {
+  const setAvailability = (playerId: number, gameId: number, available: boolean) => {
     setEntries((prev) => {
       const index = prev.findIndex(
         (e) => e.playerId === playerId && e.gameId === gameId
       );
-      if (index >= 0) {
+
+      if (available && index === -1) {
+        return [...prev, { playerId, gameId }];
+      }
+
+      if (!available && index >= 0) {
         const copy = [...prev];
         copy.splice(index, 1);
         return copy;
       }
-      return [...prev, { playerId, gameId }];
+
+      return prev;
     });
   };
 
@@ -147,7 +153,14 @@ function useAvailability() {
     setSavedEntries(entries);
   };
 
-  return { entries, toggle, isAvailable, clearAllEntries, hasUnsavedChanges, saveEntries };
+  return {
+    entries,
+    setAvailability,
+    isAvailable,
+    clearAllEntries,
+    hasUnsavedChanges,
+    saveEntries,
+  };
 }
 
 function useGameSummaries(
@@ -176,7 +189,14 @@ function useGameSummaries(
 function App() {
   const players = DEFAULT_PLAYERS;
   const games = GAMES;
-  const { entries, toggle, isAvailable, clearAllEntries, hasUnsavedChanges, saveEntries } =
+  const {
+    entries,
+    setAvailability,
+    isAvailable,
+    clearAllEntries,
+    hasUnsavedChanges,
+    saveEntries,
+  } =
     useAvailability();
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(
     DEFAULT_PLAYERS[0]?.id ?? null
@@ -270,7 +290,7 @@ function App() {
               <div>
                 <div className="card-title">Who&apos;s available?</div>
                 <div className="card-caption">
-                  Select a player, then click game columns to toggle availability.
+                  Select a player, then choose Yes or No for each game.
                 </div>
               </div>
             </div>
@@ -293,7 +313,7 @@ function App() {
             <div className="tag-row">
               <span className="tag tag-available">
                 <span className="tag-dot" />
-                Click a game cell in {selectedPlayer?.name ?? "player"}&apos;s row to toggle.
+                Use dropdowns in {selectedPlayer?.name ?? "player"}&apos;s row to set availability.
               </span>
               {hasUnsavedChanges && (
                 <button className="btn btn-save btn-sm" type="button" onClick={saveEntries}>
@@ -335,17 +355,25 @@ function App() {
                       <div
                         key={game.id}
                         className={`game-cell ${player.id === selectedPlayerId ? "game-cell-editable" : ""}`}
-                        onClick={() =>
-                          player.id === selectedPlayerId && toggle(player.id, game.id)
-                        }
                       >
-                        {active ? (
+                        {player.id === selectedPlayerId ? (
+                          <select
+                            className="cell-select"
+                            value={active ? "yes" : "no"}
+                            onChange={(e) =>
+                              setAvailability(player.id, game.id, e.target.value === "yes")
+                            }
+                          >
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                          </select>
+                        ) : active ? (
                           <span className="slot-pill">
                             <span className="dot" />
                             <span>Yes</span>
                           </span>
                         ) : (
-                          <span className="slot-empty">—</span>
+                          <span className="slot-empty">No</span>
                         )}
                       </div>
                     );
