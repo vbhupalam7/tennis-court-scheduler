@@ -318,7 +318,7 @@ function App() {
         writeEntriesToLocalStorage(skillLevel, entries);
 
         if (!cancelled) {
-          setStatusMessage(`Changes synced to Supabase (${skillLevel}).`);
+          setStatusMessage("All your changes have been saved!");
           setStatusType("info");
         }
       } catch (error) {
@@ -355,7 +355,7 @@ function App() {
       await saveAvailabilityToSupabase(skillLevel, entries);
 
       writeEntriesToLocalStorage(skillLevel, entries);
-      setStatusMessage(`Changes saved to Supabase (${skillLevel}).`);
+      setStatusMessage("All your changes have been saved!");
       setStatusType("info");
     } catch (error) {
       console.error("[availability.saveNow]", error);
