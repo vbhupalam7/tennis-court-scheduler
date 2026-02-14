@@ -1,4 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  isSupabaseConfigured,
+  loadAvailabilityFromSupabase,
+  saveAvailabilityToSupabase,
+} from "./supabaseAvailability";
 
 interface Player {
   id: number;
@@ -19,10 +24,6 @@ interface Game {
 interface AvailabilityEntry {
   playerId: number;
   gameId: number;
-}
-
-interface AvailabilityResponse {
-  entries?: unknown;
 }
 
 const LOCAL_STORAGE_KEY = "tennis-court-availability";
@@ -182,24 +183,12 @@ function App() {
       setIsLoading(true);
 
       try {
-        const response = await fetch("/api/availability", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Server responded with ${response.status}`);
-        }
-
-        const payload = (await response.json()) as AvailabilityResponse;
-        const serverEntries = normalizeEntries(payload.entries);
+        const supabaseEntries = await loadAvailabilityFromSupabase();
+        const serverEntries = normalizeEntries(supabaseEntries);
 
         setEntries(serverEntries);
         writeEntriesToLocalStorage(serverEntries);
-        setStatusMessage("Shared availability loaded from database.");
+        setStatusMessage("Shared availability loaded from Supabase.");
         setStatusType("info");
       } catch (error) {
         if (controller.signal.aborted) {
@@ -210,14 +199,16 @@ function App() {
         const localEntries = readEntriesFromLocalStorage();
         setEntries(localEntries);
 
-        if (localEntries.length > 0) {
+        if (!isSupabaseConfigured()) {
           setStatusMessage(
-            "Shared database is unavailable. Showing last saved data from this device."
+            "Supabase is not configured for this site build. Showing local device data only."
+          );
+        } else if (localEntries.length > 0) {
+          setStatusMessage(
+            "Supabase is unavailable. Showing last saved data from this device."
           );
         } else {
-          setStatusMessage(
-            "Shared database is unavailable. Starting with an empty schedule."
-          );
+          setStatusMessage("Supabase is unavailable. Starting with an empty schedule.");
         }
 
         setStatusType("error");
@@ -246,22 +237,12 @@ function App() {
       setIsSaving(true);
 
       try {
-        const response = await fetch("/api/availability", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ entries }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Server responded with ${response.status}`);
-        }
+        await saveAvailabilityToSupabase(entries);
 
         writeEntriesToLocalStorage(entries);
 
         if (!cancelled) {
-          setStatusMessage("Changes synced to shared database.");
+          setStatusMessage("Changes synced to Supabase.");
           setStatusType("info");
         }
       } catch (error) {
@@ -270,7 +251,7 @@ function App() {
 
         if (!cancelled) {
           setStatusMessage(
-            "Could not sync to shared database. Changes were saved on this device only."
+            "Could not sync to Supabase. Changes were saved on this device only."
           );
           setStatusType("error");
         }
@@ -295,26 +276,16 @@ function App() {
     setIsSaving(true);
 
     try {
-      const response = await fetch("/api/availability", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ entries }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
-      }
+      await saveAvailabilityToSupabase(entries);
 
       writeEntriesToLocalStorage(entries);
-      setStatusMessage("Changes saved to shared database.");
+      setStatusMessage("Changes saved to Supabase.");
       setStatusType("info");
     } catch (error) {
       console.error("[availability.saveNow]", error);
       writeEntriesToLocalStorage(entries);
       setStatusMessage(
-        "Could not sync to shared database. Changes were saved on this device only."
+        "Could not sync to Supabase. Changes were saved on this device only."
       );
       setStatusType("error");
     } finally {
@@ -516,8 +487,8 @@ function App() {
             </div>
 
             <div className="footer-note">
-              Availability is persisted to a shared SQLite database via `/api/availability`, with
-              local-device fallback when the server is unavailable.
+              Availability is persisted to Supabase (when configured), with local-device fallback
+              when the shared backend is unavailable.
             </div>
           </div>
         </section>

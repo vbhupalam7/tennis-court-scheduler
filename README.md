@@ -112,10 +112,32 @@ If you’d like, we can extend this with:
 - A simple backend (e.g. Node + SQLite or Supabase) so all 10 teammates can update their own availability from their phones.
 
 
-### Production deployment for shared team sync (Node + SQLite)
+### Shared persistence on GitHub Pages (Supabase)
 
-GitHub Pages is static-only, so `/api/availability` cannot run there.
-For real multi-device shared availability, deploy this repo as a Node web service.
+This app now uses Supabase directly from the frontend for shared team availability, so it works on GitHub Pages without a Node backend.
+
+#### 1. Create Supabase table and policies
+
+Run `/Users/vikasbhupalam/tennis-court-scheduler/supabase/schema.sql` in the Supabase SQL editor.
+
+#### 2. Set GitHub Actions secrets
+
+In GitHub repo settings:
+
+- `VITE_SUPABASE_URL` = your Supabase project URL (for example `https://xyzcompany.supabase.co`)
+- `VITE_SUPABASE_ANON_KEY` = your Supabase anon public key
+
+The Pages workflow injects these at build time.
+
+#### 3. Deploy
+
+Push to `main`, then open your GitHub Pages URL.
+
+If Supabase is unreachable or not configured, the app falls back to local storage and shows a warning banner.
+
+### Optional Node deployment (Render + SQLite)
+
+If you prefer SQLite with a Node backend, you can still deploy on Render.
 
 #### What is included now
 
