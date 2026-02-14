@@ -67,6 +67,9 @@ const PLAYERS_BY_SKILL_LEVEL: Record<SkillLevel, Player[]> = {
     { id: 11, name: "Manjapra, Ananth", city: "", rating: "3.0C" },
     { id: 12, name: "Mocherla, Srisail", city: "", rating: "3.0C" },
     { id: 13, name: "Nyamagoudar, Maheshkumar", city: "San Ramon", rating: "3.0C" },
+    { id: 14, name: "Palaniappan, Pugalendhi", city: "", rating: "3.0C" },
+    { id: 15, name: "Vellaiyappan, Alamuthu", city: "", rating: "3.0C" },
+    { id: 16, name: "Vib, Anish", city: "San Ramon", rating: "3.0C" },
   ],
 };
 
