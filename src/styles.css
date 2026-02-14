@@ -564,9 +564,38 @@ label {
 }
 
 .game-col-opponent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
   font-weight: 600;
   font-size: 0.68rem;
   color: #e5e7eb;
+}
+
+.location-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.location-pill-home {
+  color: #052e16;
+  background: #86efac;
+  border-color: #4ade80;
+}
+
+.location-pill-away {
+  color: #431407;
+  background: #fdba74;
+  border-color: #fb923c;
 }
 
 .game-col-date {

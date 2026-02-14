@@ -416,7 +416,16 @@ function App() {
                 {games.map((game) => (
                   <div key={game.id} className="game-col-header">
                     <span className="game-col-opponent">
-                      vs {game.opponent} ({game.homeAway})
+                      <span>vs {game.opponent}</span>
+                      <span
+                        className={
+                          game.homeAway === "Home"
+                            ? "location-pill location-pill-home"
+                            : "location-pill location-pill-away"
+                        }
+                      >
+                        {game.homeAway}
+                      </span>
                     </span>
                     <span className="game-col-date">
                       {game.day}, {game.date}
