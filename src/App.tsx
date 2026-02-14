@@ -15,6 +15,7 @@ interface Player {
 interface Game {
   id: number;
   opponent: string;
+  day: string;
   date: string;
   time: string;
   homeAway: "Home" | "Away";
@@ -52,16 +53,9 @@ const DEFAULT_PLAYERS: Player[] = [
 
 const GAMES: Game[] = [
   {
-    id: 1,
-    opponent: "Crow Canyon CC",
-    date: "Feb 15",
-    time: "11:00 AM",
-    homeAway: "Away",
-    location: "Crow Canyon CC",
-  },
-  {
     id: 2,
     opponent: "Blackhawk CC",
+    day: "Sat",
     date: "Feb 21",
     time: "12:30 PM",
     homeAway: "Away",
@@ -70,6 +64,7 @@ const GAMES: Game[] = [
   {
     id: 3,
     opponent: "Dougherty Valley HS",
+    day: "Sat",
     date: "Feb 28",
     time: "11:00 AM",
     homeAway: "Home",
@@ -78,10 +73,20 @@ const GAMES: Game[] = [
   {
     id: 4,
     opponent: "Fremont TC",
+    day: "Thu",
     date: "Mar 5",
     time: "6:30 PM",
     homeAway: "Away",
     location: "FTC",
+  },
+  {
+    id: 1,
+    opponent: "Crow Canyon CC",
+    day: "Sun",
+    date: "Mar 15",
+    time: "1:00 PM",
+    homeAway: "Away",
+    location: "Crow Canyon CC",
   },
 ];
 
@@ -410,8 +415,12 @@ function App() {
                 <div>Rating</div>
                 {games.map((game) => (
                   <div key={game.id} className="game-col-header">
-                    <span className="game-col-opponent">vs {game.opponent}</span>
-                    <span className="game-col-date">{game.date}</span>
+                    <span className="game-col-opponent">
+                      vs {game.opponent} ({game.homeAway})
+                    </span>
+                    <span className="game-col-date">
+                      {game.day}, {game.date}
+                    </span>
                     <span className="game-col-time">{game.time}</span>
                   </div>
                 ))}
@@ -462,8 +471,9 @@ function App() {
               {bestGame ? (
                 <>
                   <div className="summary-main">
-                    <strong>Most available</strong>: vs {bestGame.game.opponent} on {bestGame.game.date}
-                    at {bestGame.game.time} ({bestGame.game.homeAway} · {bestGame.game.location}) with
+                    <strong>Most available</strong>: vs {bestGame.game.opponent} on{" "}
+                    {bestGame.game.day}, {bestGame.game.date} at {bestGame.game.time} (
+                    {bestGame.game.homeAway} · {bestGame.game.location}) with
                     <strong> {bestGame.count}</strong> player{bestGame.count !== 1 ? "s" : ""}.
                   </div>
                   <div className="summary-row">
