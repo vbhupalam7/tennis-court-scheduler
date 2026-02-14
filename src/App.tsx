@@ -27,68 +27,127 @@ interface AvailabilityEntry {
   gameId: number;
 }
 
+type SkillLevel = "3.5" | "3.0";
+
 const LOCAL_STORAGE_KEY = "tennis-court-availability";
 
-const DEFAULT_PLAYERS: Player[] = [
-  { id: 1, name: "Ankoti, Digvijay", city: "San Ramon", rating: "3.5C" },
-  { id: 2, name: "Bejjanki, Raghupal", city: "Pleasanton", rating: "3.5C" },
-  { id: 3, name: "Bhupalam, Vikas", city: "Dublin", rating: "3.5C" },
-  { id: 4, name: "Billapati, Anil", city: "San Ramon", rating: "3.0C" },
-  { id: 5, name: "Boral, John", city: "Walnut Creek", rating: "3.5C" },
-  { id: 6, name: "Chanda, Shanker", city: "Pleasanton", rating: "3.5C" },
-  { id: 7, name: "Chinta, Shiva Kumar", city: "Pleasanton", rating: "3.5S" },
-  { id: 8, name: "Ham, Oscar", city: "Dublin", rating: "3.0C" },
-  { id: 9, name: "Hari, Siva", city: "Sunnyvale", rating: "3.0C" },
-  { id: 10, name: "Hariharaiyer, Sivakumar", city: "Dublin", rating: "3.5C" },
-  { id: 11, name: "Kattamedi, Venkata", city: "Dublin", rating: "3.0C" },
-  { id: 12, name: "Lakinana, Manoj", city: "Dublin", rating: "3.0C" },
-  { id: 13, name: "Mandepudi, Srinivasa", city: "Dublin", rating: "3.5C" },
-  { id: 14, name: "Nyamagoudar, Maheshkumar", city: "San Ramon", rating: "3.0C" },
-  { id: 15, name: "Seshadri, Sunil", city: "Castro Valley", rating: "3.5C" },
-  { id: 16, name: "Sharma, Sumit", city: "Dublin", rating: "3.5C" },
-  { id: 17, name: "Singh, Dinesh", city: "Dublin", rating: "3.5C" },
-  { id: 18, name: "Singh, Kulbir", city: "Dublin", rating: "3.5C" },
-  { id: 19, name: "Vib, Anish", city: "San Ramon", rating: "3.0C" },
-];
+const PLAYERS_BY_SKILL_LEVEL: Record<SkillLevel, Player[]> = {
+  "3.5": [
+    { id: 1, name: "Ankoti, Digvijay", city: "San Ramon", rating: "3.5C" },
+    { id: 2, name: "Bejjanki, Raghupal", city: "Pleasanton", rating: "3.5C" },
+    { id: 3, name: "Bhupalam, Vikas", city: "Dublin", rating: "3.5C" },
+    { id: 4, name: "Billapati, Anil", city: "San Ramon", rating: "3.0C" },
+    { id: 5, name: "Boral, John", city: "Walnut Creek", rating: "3.5C" },
+    { id: 6, name: "Chanda, Shanker", city: "Pleasanton", rating: "3.5C" },
+    { id: 7, name: "Chinta, Shiva Kumar", city: "Pleasanton", rating: "3.5S" },
+    { id: 8, name: "Ham, Oscar", city: "Dublin", rating: "3.0C" },
+    { id: 9, name: "Hari, Siva", city: "Sunnyvale", rating: "3.0C" },
+    { id: 10, name: "Hariharaiyer, Sivakumar", city: "Dublin", rating: "3.5C" },
+    { id: 11, name: "Kattamedi, Venkata", city: "Dublin", rating: "3.0C" },
+    { id: 12, name: "Lakinana, Manoj", city: "Dublin", rating: "3.0C" },
+    { id: 13, name: "Mandepudi, Srinivasa", city: "Dublin", rating: "3.5C" },
+    { id: 14, name: "Nyamagoudar, Maheshkumar", city: "San Ramon", rating: "3.0C" },
+    { id: 15, name: "Seshadri, Sunil", city: "Castro Valley", rating: "3.5C" },
+    { id: 16, name: "Sharma, Sumit", city: "Dublin", rating: "3.5C" },
+    { id: 17, name: "Singh, Dinesh", city: "Dublin", rating: "3.5C" },
+    { id: 18, name: "Singh, Kulbir", city: "Dublin", rating: "3.5C" },
+    { id: 19, name: "Vib, Anish", city: "San Ramon", rating: "3.0C" },
+  ],
+  "3.0": [
+    { id: 1, name: "Aitha, Bheemsen", city: "", rating: "3.0C" },
+    { id: 2, name: "Arumugam, Saravanan", city: "", rating: "3.0C" },
+    { id: 3, name: "Billapati, Anil", city: "San Ramon", rating: "3.0C" },
+    { id: 4, name: "Chidipotu, Harinath", city: "", rating: "3.0C" },
+    { id: 5, name: "Duraisamy, Veeravadivel", city: "", rating: "3.0C" },
+    { id: 6, name: "Ham, Oscar", city: "Dublin", rating: "3.0C" },
+    { id: 7, name: "Hari, Siva", city: "Sunnyvale", rating: "3.0C" },
+    { id: 8, name: "Iyer, Chandrasekhar", city: "", rating: "3.0C" },
+    { id: 9, name: "Kattamedi, Venkata", city: "Dublin", rating: "3.0C" },
+    { id: 10, name: "Lakinana, Manoj", city: "Dublin", rating: "3.0C" },
+    { id: 11, name: "Manjapra, Ananth", city: "", rating: "3.0C" },
+    { id: 12, name: "Mocherla, Srisail", city: "", rating: "3.0C" },
+    { id: 13, name: "Nyamagoudar, Maheshkumar", city: "San Ramon", rating: "3.0C" },
+  ],
+};
 
-const GAMES: Game[] = [
-  {
-    id: 2,
-    opponent: "Blackhawk CC",
-    day: "Sat",
-    date: "Feb 21",
-    time: "12:30 PM",
-    homeAway: "Away",
-    location: "Blackhawk CC",
-  },
-  {
-    id: 3,
-    opponent: "Dougherty Valley HS",
-    day: "Sat",
-    date: "Feb 28",
-    time: "11:00 AM",
-    homeAway: "Home",
-    location: "PTC",
-  },
-  {
-    id: 4,
-    opponent: "Fremont TC",
-    day: "Thu",
-    date: "Mar 5",
-    time: "6:30 PM",
-    homeAway: "Away",
-    location: "FTC",
-  },
-  {
-    id: 1,
-    opponent: "Crow Canyon CC",
-    day: "Sun",
-    date: "Mar 15",
-    time: "1:00 PM",
-    homeAway: "Away",
-    location: "Crow Canyon CC",
-  },
-];
+const GAMES_BY_SKILL_LEVEL: Record<SkillLevel, Game[]> = {
+  "3.5": [
+    {
+      id: 2,
+      opponent: "Blackhawk CC",
+      day: "Sat",
+      date: "Feb 21",
+      time: "12:30 PM",
+      homeAway: "Away",
+      location: "",
+    },
+    {
+      id: 3,
+      opponent: "Dougherty Valley HS",
+      day: "Sat",
+      date: "Feb 28",
+      time: "11:00 AM",
+      homeAway: "Home",
+      location: "PTC",
+    },
+    {
+      id: 4,
+      opponent: "Fremont TC",
+      day: "Thu",
+      date: "Mar 5",
+      time: "6:30 PM",
+      homeAway: "Away",
+      location: "FTC",
+    },
+    {
+      id: 1,
+      opponent: "Crow Canyon CC",
+      day: "Sun",
+      date: "Mar 15",
+      time: "1:00 PM",
+      homeAway: "Away",
+      location: "",
+    },
+  ],
+  "3.0": [
+    {
+      id: 1,
+      opponent: "Dublin HS",
+      day: "Sun",
+      date: "Feb 15",
+      time: "3:00 PM",
+      homeAway: "Home",
+      location: "PTC",
+    },
+    {
+      id: 2,
+      opponent: "Fremont TC",
+      day: "Sat",
+      date: "Feb 21",
+      time: "11:00 AM",
+      homeAway: "Home",
+      location: "PTC",
+    },
+    {
+      id: 3,
+      opponent: "Dougherty Valley HS",
+      day: "Sat",
+      date: "Mar 7",
+      time: "9:30 AM",
+      homeAway: "Away",
+      location: "Dougherty Valley HS",
+    },
+    {
+      id: 4,
+      opponent: "Pleasanton",
+      day: "Sun",
+      date: "Mar 15",
+      time: "3:00 PM",
+      homeAway: "Home",
+      location: "PTC",
+    },
+  ],
+};
 
 function normalizeEntries(value: unknown): AvailabilityEntry[] {
   if (!Array.isArray(value)) {
@@ -119,9 +178,9 @@ function normalizeEntries(value: unknown): AvailabilityEntry[] {
   return [...deduped.values()];
 }
 
-function readEntriesFromLocalStorage(): AvailabilityEntry[] {
+function readEntriesFromLocalStorage(skillLevel: SkillLevel): AvailabilityEntry[] {
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_KEY}.${skillLevel}`);
     if (!raw) {
       return [];
     }
@@ -133,9 +192,12 @@ function readEntriesFromLocalStorage(): AvailabilityEntry[] {
   }
 }
 
-function writeEntriesToLocalStorage(entries: AvailabilityEntry[]): void {
+function writeEntriesToLocalStorage(
+  skillLevel: SkillLevel,
+  entries: AvailabilityEntry[]
+): void {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(entries));
+    localStorage.setItem(`${LOCAL_STORAGE_KEY}.${skillLevel}`, JSON.stringify(entries));
   } catch (error) {
     console.error("[localStorage.write]", error);
   }
@@ -167,12 +229,13 @@ function useGameSummaries(
 }
 
 function App() {
-  const players = DEFAULT_PLAYERS;
-  const games = GAMES;
+  const [skillLevel, setSkillLevel] = useState<SkillLevel>("3.5");
+  const players = PLAYERS_BY_SKILL_LEVEL[skillLevel];
+  const games = GAMES_BY_SKILL_LEVEL[skillLevel];
 
   const [entries, setEntries] = useState<AvailabilityEntry[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(
-    DEFAULT_PLAYERS[0]?.id ?? null
+    PLAYERS_BY_SKILL_LEVEL["3.5"][0]?.id ?? null
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -182,18 +245,23 @@ function App() {
   const hasLoadedAvailability = useRef(false);
 
   useEffect(() => {
+    setSelectedPlayerId(players[0]?.id ?? null);
+  }, [players, skillLevel]);
+
+  useEffect(() => {
     const controller = new AbortController();
 
     async function loadAvailability() {
       setIsLoading(true);
+      hasLoadedAvailability.current = false;
 
       try {
-        const supabaseEntries = await loadAvailabilityFromSupabase();
+        const supabaseEntries = await loadAvailabilityFromSupabase(skillLevel);
         const serverEntries = normalizeEntries(supabaseEntries);
 
         setEntries(serverEntries);
-        writeEntriesToLocalStorage(serverEntries);
-        setStatusMessage("Shared availability loaded from Supabase.");
+        writeEntriesToLocalStorage(skillLevel, serverEntries);
+        setStatusMessage(`Shared ${skillLevel} availability loaded from Supabase.`);
         setStatusType("info");
       } catch (error) {
         if (controller.signal.aborted) {
@@ -201,19 +269,19 @@ function App() {
         }
 
         console.error("[availability.load]", error);
-        const localEntries = readEntriesFromLocalStorage();
+        const localEntries = readEntriesFromLocalStorage(skillLevel);
         setEntries(localEntries);
 
         if (!isSupabaseConfigured()) {
           setStatusMessage(
-            "Supabase is not configured for this site build. Showing local device data only."
+            `Supabase is not configured for this site build. Showing ${skillLevel} local data only.`
           );
         } else if (localEntries.length > 0) {
           setStatusMessage(
-            "Supabase is unavailable. Showing last saved data from this device."
+            `Supabase is unavailable. Showing last saved ${skillLevel} data from this device.`
           );
         } else {
-          setStatusMessage("Supabase is unavailable. Starting with an empty schedule.");
+          setStatusMessage(`Supabase is unavailable. Starting empty for ${skillLevel}.`);
         }
 
         setStatusType("error");
@@ -230,7 +298,7 @@ function App() {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [skillLevel]);
 
   useEffect(() => {
     if (!hasLoadedAvailability.current || isLoading) {
@@ -242,21 +310,21 @@ function App() {
       setIsSaving(true);
 
       try {
-        await saveAvailabilityToSupabase(entries);
+        await saveAvailabilityToSupabase(skillLevel, entries);
 
-        writeEntriesToLocalStorage(entries);
+        writeEntriesToLocalStorage(skillLevel, entries);
 
         if (!cancelled) {
-          setStatusMessage("Changes synced to Supabase.");
+          setStatusMessage(`Changes synced to Supabase (${skillLevel}).`);
           setStatusType("info");
         }
       } catch (error) {
         console.error("[availability.save]", error);
-        writeEntriesToLocalStorage(entries);
+        writeEntriesToLocalStorage(skillLevel, entries);
 
         if (!cancelled) {
           setStatusMessage(
-            "Could not sync to Supabase. Changes were saved on this device only."
+            `Could not sync ${skillLevel} to Supabase. Changes were saved on this device only.`
           );
           setStatusType("error");
         }
@@ -271,7 +339,7 @@ function App() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [entries, isLoading]);
+  }, [entries, isLoading, skillLevel]);
 
   const saveNow = async () => {
     if (isLoading || isSaving) {
@@ -281,16 +349,16 @@ function App() {
     setIsSaving(true);
 
     try {
-      await saveAvailabilityToSupabase(entries);
+      await saveAvailabilityToSupabase(skillLevel, entries);
 
-      writeEntriesToLocalStorage(entries);
-      setStatusMessage("Changes saved to Supabase.");
+      writeEntriesToLocalStorage(skillLevel, entries);
+      setStatusMessage(`Changes saved to Supabase (${skillLevel}).`);
       setStatusType("info");
     } catch (error) {
       console.error("[availability.saveNow]", error);
-      writeEntriesToLocalStorage(entries);
+      writeEntriesToLocalStorage(skillLevel, entries);
       setStatusMessage(
-        "Could not sync to Supabase. Changes were saved on this device only."
+        `Could not sync ${skillLevel} to Supabase. Changes were saved on this device only.`
       );
       setStatusType("error");
     } finally {
@@ -372,6 +440,18 @@ function App() {
                 </div>
               </div>
               <div className="sync-indicator">{isLoading ? "Loading..." : isSaving ? "Syncing..." : "Synced"}</div>
+            </div>
+
+            <div className="field">
+              <label>Skill level</label>
+              <select
+                className="select"
+                value={skillLevel}
+                onChange={(event) => setSkillLevel(event.target.value as SkillLevel)}
+              >
+                <option value="3.5">3.5</option>
+                <option value="3.0">3.0</option>
+              </select>
             </div>
 
             <div className="field">
@@ -506,8 +586,8 @@ function App() {
             </div>
 
             <div className="footer-note">
-              Availability is persisted to Supabase (when configured), with local-device fallback
-              when the shared backend is unavailable.
+              Availability is persisted per skill level to Supabase (when configured), with
+              local-device fallback when the shared backend is unavailable.
             </div>
           </div>
         </section>

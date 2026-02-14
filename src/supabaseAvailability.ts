@@ -4,9 +4,12 @@ interface AvailabilityEntry {
 }
 
 interface SupabaseRow {
+  skill_level: string;
   player_id: number;
   game_id: number;
 }
+
+type SkillLevel = "3.5" | "3.0";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -32,13 +35,17 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 }
 
-export async function loadAvailabilityFromSupabase(): Promise<AvailabilityEntry[]> {
+export async function loadAvailabilityFromSupabase(
+  skillLevel: SkillLevel
+): Promise<AvailabilityEntry[]> {
   if (!isSupabaseConfigured()) {
     throw new Error("Supabase environment variables are missing");
   }
 
   const response = await fetch(
-    getEndpoint("availability_entries?select=player_id,game_id&order=player_id.asc,game_id.asc"),
+    getEndpoint(
+      `availability_entries?select=skill_level,player_id,game_id&skill_level=eq.${skillLevel}&order=player_id.asc,game_id.asc`
+    ),
     {
       method: "GET",
       headers: getHeaders(),
@@ -58,6 +65,7 @@ export async function loadAvailabilityFromSupabase(): Promise<AvailabilityEntry[
 }
 
 export async function saveAvailabilityToSupabase(
+  skillLevel: SkillLevel,
   entries: AvailabilityEntry[]
 ): Promise<void> {
   if (!isSupabaseConfigured()) {
@@ -65,7 +73,7 @@ export async function saveAvailabilityToSupabase(
   }
 
   const deleteResponse = await fetch(
-    getEndpoint("availability_entries?player_id=gte.0"),
+    getEndpoint(`availability_entries?skill_level=eq.${skillLevel}`),
     {
       method: "DELETE",
       headers: getHeaders(),
@@ -81,6 +89,7 @@ export async function saveAvailabilityToSupabase(
   }
 
   const body = entries.map((entry) => ({
+    skill_level: skillLevel,
     player_id: entry.playerId,
     game_id: entry.gameId,
   }));

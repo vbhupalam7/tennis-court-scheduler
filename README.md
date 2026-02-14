@@ -119,6 +119,7 @@ This app now uses Supabase directly from the frontend for shared team availabili
 #### 1. Create Supabase table and policies
 
 Run `/Users/vikasbhupalam/tennis-court-scheduler/supabase/schema.sql` in the Supabase SQL editor.
+This now stores availability separately for `3.5` and `3.0` skill levels.
 
 #### 2. Set GitHub Actions secrets
 

@@ -1,9 +1,33 @@
 create table if not exists public.availability_entries (
+  skill_level text not null default '3.5',
   player_id integer not null,
   game_id integer not null,
   updated_at timestamptz not null default now(),
-  primary key (player_id, game_id)
+  primary key (skill_level, player_id, game_id)
 );
+
+alter table public.availability_entries
+  add column if not exists skill_level text;
+
+update public.availability_entries
+set skill_level = '3.5'
+where skill_level is null;
+
+alter table public.availability_entries
+  alter column skill_level set not null;
+
+alter table public.availability_entries
+  drop constraint if exists availability_entries_pkey;
+
+alter table public.availability_entries
+  add constraint availability_entries_pkey primary key (skill_level, player_id, game_id);
+
+alter table public.availability_entries
+  drop constraint if exists availability_entries_skill_level_check;
+
+alter table public.availability_entries
+  add constraint availability_entries_skill_level_check
+  check (skill_level in ('3.0', '3.5'));
 
 alter table public.availability_entries enable row level security;
 
